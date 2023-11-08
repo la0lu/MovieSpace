@@ -9,17 +9,6 @@ namespace MovieSpace.Services.Implementations
     {
         private readonly IRepository _repository;
 
-        private readonly List<string> allowedGenres = new()
-        {
-            "Action",
-            "Romance",
-            "Adventure",
-            "Comedy",
-            "Drama",
-            "Horror",
-            "Mystery"
-        };
-
         public GenreService(IRepository repository)
         {
             _repository = repository;
@@ -36,5 +25,6 @@ namespace MovieSpace.Services.Implementations
 
             return newGenre;
         }
+
     }
 }

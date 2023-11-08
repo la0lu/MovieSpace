@@ -33,35 +33,41 @@ namespace MovieSpace.Services.Implementations
 
             try
             {
-                var selectedGenres =  GetGenresByNames(movie.Genres);
+                var selectedGenres = GetGenresByNames(movie.Genres);
 
-                foreach (var genre in selectedGenres)
+                if (selectedGenres != null && selectedGenres.Any())
                 {
-                    genre.Movies.Add(newMovie);
-                    newMovie.Genres.Add(genre);
+                    foreach (var genre in selectedGenres)
+                    {
+                        genre.Movies.Add(newMovie);
+                        newMovie.Genres.Add(genre);
+                    }
+
+                    await _repository.AddAsync<Movie>(newMovie);
+
+                    var newMovieData = new CreateMovieDto
+                    {
+                        Name = newMovie.Name,
+                        Description = newMovie.Description,
+                        Country = newMovie.Country,
+                        TicketPrice = newMovie.TicketPrice,
+                        RelesedDate = newMovie.RelesedDate,
+                        Rating = newMovie.Rating,
+                        Photo = newMovie.Photo,
+                        Genres = newMovie.Genres.Select(g => g.Name).ToList()
+                    };
+
+                    return newMovieData;
                 }
-
-                await _repository.AddAsync<Movie>(newMovie);
-
-                var newMovieData = new CreateMovieDto
+                else
                 {
-                    Name = newMovie.Name,
-                    Description = newMovie.Description,
-                    Country = newMovie.Country,
-                    TicketPrice = newMovie.TicketPrice,
-                    RelesedDate = newMovie.RelesedDate,
-                    Rating = newMovie.Rating,
-                    Photo = newMovie.Photo,
-                    Genres = newMovie.Genres.Select(g => g.Name).ToList()
-                };
-
-                return newMovieData;
+                    throw new Exception("The provided genres do not exist in the database.");
+                }
             }
             catch (Exception ex)
             {
                 throw new Exception("Failed to create the movie: " + ex.Message);
             }
-          
         }
 
         public List<Genre> GetGenresByNames(List<string> genreNames)
@@ -85,12 +91,7 @@ namespace MovieSpace.Services.Implementations
         {
             try
             {
-                var existingMovie = await _repository.GetByIdAsync<Movie>(movieId);
-
-                if (existingMovie == null)
-                {
-                    throw new Exception($"Movie with ID {movieId} not found.");
-                }
+                var existingMovie = await _repository.GetByIdAsync<Movie>(movieId) ?? throw new Exception($"Movie with ID {movieId} not found.");
 
                 existingMovie.Name = movieUpdate.Name ?? existingMovie.Name;
                 existingMovie.Description = movieUpdate.Description ?? existingMovie.Description;
@@ -99,23 +100,39 @@ namespace MovieSpace.Services.Implementations
                 existingMovie.RelesedDate = movieUpdate.RelesedDate;
                 existingMovie.Rating = movieUpdate.Rating;
                 existingMovie.Photo = movieUpdate.Photo;
-                existingMovie.Genres = movieUpdate.Genres;
+                existingMovie.Genres = new List<Genre>();
 
-                await _repository.UpdateAsync<Movie>(existingMovie);
+                var selectedGenres = GetGenresByNames(movieUpdate.Genres);
 
-                var updatedMovie = new UpdateMovieDto
+                if(selectedGenres != null && selectedGenres.Any() )
                 {
-                    Name = existingMovie.Name,
-                    Description = existingMovie.Description,
-                    Country = existingMovie.Country,
-                    TicketPrice = existingMovie.TicketPrice,
-                    RelesedDate = existingMovie.RelesedDate,
-                    Rating = existingMovie.Rating,
-                    Photo = existingMovie.Photo,
-                    Genres = existingMovie.Genres,
-                };
+                    foreach (var genre in selectedGenres)
+                    {
+                        genre.Movies.Add(existingMovie);
+                        existingMovie.Genres.Add(genre);
+                    }
 
-                return updatedMovie;
+
+                    await _repository.UpdateAsync<Movie>(existingMovie);
+
+                    var updatedMovie = new UpdateMovieDto
+                    {
+                        Name = existingMovie.Name,
+                        Description = existingMovie.Description,
+                        Country = existingMovie.Country,
+                        TicketPrice = existingMovie.TicketPrice,
+                        RelesedDate = existingMovie.RelesedDate,
+                        Rating = existingMovie.Rating,
+                        Photo = existingMovie.Photo,
+                        Genres = existingMovie.Genres.Select(g => g.Name).ToList(),
+                    };
+
+                    return updatedMovie;
+                }
+                else
+                {
+                    throw new Exception("The provided genres do not exist in the database.");
+                }
             }
             catch (Exception ex)
             {
@@ -131,8 +148,15 @@ namespace MovieSpace.Services.Implementations
 
             var moviesQuery = await _repository.GetAllAsync<Movie>();
 
-            if(genreFilter) moviesQuery = moviesQuery.Where(m => m.Genres.Any(g => g.Name == filters.Genre));
-            if(countryFilter) moviesQuery = moviesQuery.Where(m => m.Country == filters.Country);
+            if (genreFilter)
+            {
+                moviesQuery = moviesQuery.Where(m => m.Genres.Any(g => g.Name == filters.Genre));
+            }
+
+            if (countryFilter)
+            {
+                moviesQuery = moviesQuery.Where(m => m.Country == filters.Country);
+            }
 
             var allMovies = moviesQuery.Select(m => new GetAllMoviesDto
             {
@@ -145,7 +169,6 @@ namespace MovieSpace.Services.Implementations
                 TicketPrice = m.TicketPrice,
                 Rating = m.Rating,
                 Genres = m.Genres,
-                
             });
 
             var pageNum = filters.Page ?? 1;
@@ -155,6 +178,7 @@ namespace MovieSpace.Services.Implementations
 
             return paginatedResponse;
         }
+
 
         public async Task<GetSingleMovieDto> GetSingleMovieAsync(string movieId)
         {
@@ -182,11 +206,15 @@ namespace MovieSpace.Services.Implementations
         {
             var movie = await _repository.GetByIdAsync<Movie>(movieId);
 
-            if (movie == null) throw new Exception($"Movie wiith ID {movieId} not found.");
+            if (movie == null)
+            {
+                return false;
+            }
 
-            await _repository.DeleteAsync(movieId);
+            await _repository.DeleteAsync(movie);
 
             return true;
         }
+
     }
 }

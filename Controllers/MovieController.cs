@@ -58,14 +58,14 @@ namespace MovieSpace.Controllers
             }
         }
 
-        [HttpPut("{movieId}")]
-        public async Task<IActionResult> UpdateMovie(string movieId, [FromBody] UpdateMovieDto movieUpdate)
+        [HttpPut("{Id}")]
+        public async Task<IActionResult> UpdateMovie(string Id, [FromBody] UpdateMovieDto movieUpdate)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             try
             {
-                var updatedMovie = await _movieService.UpdateMovieAsync(movieId, movieUpdate);
+                var updatedMovie = await _movieService.UpdateMovieAsync(Id, movieUpdate);
 
                 if (updatedMovie != null)
                 {
@@ -97,7 +97,7 @@ namespace MovieSpace.Controllers
             }
         }
 
-        [HttpGet("")]
+        [HttpGet("all")]
         public async Task<IActionResult> GetAllArticles([FromQuery] FilterMoviesDto filters)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -137,11 +137,11 @@ namespace MovieSpace.Controllers
         }
 
         [HttpGet("{Id}")]
-        public async Task<ActionResult<Response<GetSingleMovieDto>>> GetSingleArticle(string movieId)
+        public async Task<ActionResult<Response<GetSingleMovieDto>>> GetSingleArticle(string Id)
         {
+                var movie = await _movieService.GetSingleMovieAsync(Id);
             try
             {
-                var movie = await _movieService.GetSingleMovieAsync(movieId);
 
                 if (movie == null)
                 {
@@ -171,11 +171,11 @@ namespace MovieSpace.Controllers
 
 
         [HttpDelete("{Id}")]
-        public async Task<IActionResult> DeleteMovie(string movieId)
+        public async Task<IActionResult> DeleteMovie(string Id)
         {
             try
             {
-                var result = await _movieService.DeleteMovieAsync(movieId);
+                var result = await _movieService.DeleteMovieAsync(Id);
 
                 if (result)
                 {
@@ -191,14 +191,14 @@ namespace MovieSpace.Controllers
                 {
                     return BadRequest(new Response<bool>
                     {
-                        Code = 500,
+                        Code = 404,
                         Data = !result,
-                        Message = "Failed to Delete Movie",
-                        Error = "Unable to Delete",
+                        Message = "Movie not found",
+                        Error = "The specified movie was not found",
                     });
                 }
             }
-            catch( Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError($"Error: {ex.Message}");
                 return StatusCode(StatusCodes.Status500InternalServerError, "Internal Server Error");

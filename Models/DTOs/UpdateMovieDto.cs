@@ -11,7 +11,9 @@ namespace MovieSpace.Models.DTOs
         [Required] public string Photo { get; set; }
         [Required] public DateTime RelesedDate { get; set; }
         [Required] public int TicketPrice { get; set; }
-        [Required] public ICollection<Genre> Genres { get; set; }
+
+        [Required]
+        public List<string> Genres { get; set; }
 
         [Required]
         [CountryValidation(ErrorMessage = "Country must be either: NIGERIA, GHANA, USA, UK, KOREA, INDIA, SPAIN")]
