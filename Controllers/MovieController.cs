@@ -100,8 +100,6 @@ namespace MovieSpace.Controllers
         [HttpGet("all")]
         public async Task<IActionResult> GetAllArticles([FromQuery] FilterMoviesDto filters)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
             try
             {
                 var movies = await _movieService.GetAllMoviesAsync(filters);
